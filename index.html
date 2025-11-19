@@ -513,12 +513,39 @@
         /* Taskbar */
         #taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 48px; background-color: var(--taskbar-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid var(--glass-border); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 0 10px; }
         .taskbar-center { display: flex; align-items: center; gap: 4px; height: 100%; }
+        
+        /* Taskbar Icon & Indicators - Updated for Windows 11 Accuracy */
         .taskbar-icon { width: 40px; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: all 0.2s var(--fluent-ease); position: relative; color: var(--text-color); }
         .taskbar-icon:hover { background-color: var(--hover-bg); }
         .taskbar-icon:active { transform: scale(0.9); } 
+        
+        /* Active state background plate (subtle in Win11) */
         .taskbar-icon.active { background-color: var(--active-bg); }
-        .taskbar-icon.open::after { content: ''; position: absolute; bottom: 3px; width: 6px; height: 3px; background-color: var(--text-color); border-radius: 2px; transition: width 0.3s var(--fluent-ease), background-color 0.3s; }
-        .taskbar-icon.open.active::after { width: 16px; background-color: var(--accent-color); }
+        
+        /* 
+           Windows 11 Indicator Logic:
+           - Open (Inactive/Minimized): Small rounded pill, color is text-color (gray/white) with some opacity.
+           - Active (Focused): Wider rounded pill, color is Accent Color.
+        */
+        .taskbar-icon.open::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: 2px; /* Positioned at the very bottom */
+            width: 6px; /* Start small (inactive state) */
+            height: 3px; 
+            background-color: var(--text-color); /* Gray/White pill for open apps */
+            opacity: 0.5; /* Subtle look for inactive apps */
+            border-radius: 2px; 
+            transition: width 0.3s var(--fluent-ease), background-color 0.3s, transform 0.3s; 
+        }
+        
+        /* When Active, indicator expands and changes to accent color */
+        .taskbar-icon.open.active::after { 
+            width: 16px; /* Wide pill for active app */
+            background-color: var(--accent-color); /* Accent color highlights focus */
+            opacity: 1;
+        }
+
         .taskbar-right { position: absolute; right: 10px; height: 100%; display: flex; align-items: center; gap: 8px; }
         .system-tray { display: flex; align-items: center; gap: 12px; padding: 0 12px; height: 40px; border-radius: 4px; font-size: 16px; transition: background 0.2s; }
         .system-tray:hover { background-color: var(--hover-bg); }
@@ -589,7 +616,6 @@
         </div>
 
         <div id="signin-screen">
-            <!-- Sign-in Avatar Updated: Text "User" in circle -->
             <div class="signin-avatar">User</div>
             <div class="signin-name">Windows ユーザー</div>
             <div class="signin-input-group">
@@ -1092,29 +1118,70 @@
 
         /* --- Window & App Logic --- */
         let zIndexCounter = 100;
+        
         function openWindow(id) {
             const win = document.getElementById(id);
             if(!win) return;
-            win.classList.remove('minimized'); win.classList.add('open');
-            zIndexCounter++; win.style.zIndex = zIndexCounter;
-            updateTaskbar(id, true); closeAllMenus();
+            win.classList.remove('minimized'); 
+            win.classList.add('open');
+            zIndexCounter++; 
+            win.style.zIndex = zIndexCounter;
+            updateTaskbar(id, 'active'); 
+            closeAllMenus();
         }
-        function closeWindow(id) { document.getElementById(id).classList.remove('open'); updateTaskbar(id, false); }
-        function minimizeWindow(id) { document.getElementById(id).classList.add('minimized'); document.getElementById(id).classList.remove('open'); }
-        function toggleMaximize(id) { document.getElementById(id).classList.toggle('maximized'); }
+        
+        function closeWindow(id) { 
+            const win = document.getElementById(id);
+            win.classList.remove('open'); 
+            win.classList.add('minimized'); // Technically hidden, but reset state
+            setTimeout(() => win.classList.remove('minimized'), 200); // Cleanup
+            updateTaskbar(id, 'closed'); 
+        }
+        
+        function minimizeWindow(id) { 
+            const win = document.getElementById(id);
+            win.classList.add('minimized'); 
+            win.classList.remove('open'); 
+            // Minimized windows are still "open" in the taskbar, just not "active"
+            updateTaskbar(id, 'minimized');
+        }
+        
+        function toggleMaximize(id) { 
+            document.getElementById(id).classList.toggle('maximized'); 
+        }
+        
         function toggleWindow(id) {
             const win = document.getElementById(id);
-            if(win.classList.contains('open') && !win.classList.contains('minimized')) {
-                 if(win.style.zIndex == zIndexCounter) minimizeWindow(id);
-                 else { zIndexCounter++; win.style.zIndex = zIndexCounter; }
-            } else openWindow(id);
+            const appId = win.dataset.appId;
+            const icon = document.getElementById('tb-'+appId);
+            
+            // If window is active and open -> Minimize it
+            if(win.classList.contains('open') && !win.classList.contains('minimized') && win.style.zIndex == zIndexCounter) {
+                minimizeWindow(id);
+            } 
+            // If window is open but minimized or behind -> Bring to front
+            else {
+                if(win.classList.contains('open')) {
+                    zIndexCounter++; win.style.zIndex = zIndexCounter;
+                }
+                openWindow(id);
+            }
         }
-        function updateTaskbar(id, isOpen) {
+        
+        // Updated Taskbar Logic for Windows 11 Style
+        function updateTaskbar(id, state) {
              const appId = document.getElementById(id).dataset.appId;
              const icon = document.getElementById('tb-'+appId);
-             if(icon) {
-                 if(isOpen) icon.classList.add('open', 'active');
-                 else { icon.classList.remove('open', 'active'); }
+             if(!icon) return;
+             
+             if(state === 'active') {
+                 icon.classList.add('open', 'active');
+             } else if (state === 'minimized') {
+                 icon.classList.add('open');
+                 icon.classList.remove('active');
+             } else {
+                 // closed
+                 icon.classList.remove('open', 'active');
              }
         }
         
@@ -1126,6 +1193,7 @@
                 if(currentWin.classList.contains('maximized')) return;
                 isDragging = true; currentWin.classList.add('dragging');
                 zIndexCounter++; currentWin.style.zIndex = zIndexCounter;
+                updateTaskbar(currentWin.id, 'active'); // Ensure dragging makes it active
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 const rect = currentWin.getBoundingClientRect();
