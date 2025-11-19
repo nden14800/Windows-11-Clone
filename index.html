@@ -42,7 +42,7 @@
             --slider-bg: #d0d0d0;
             --oobe-bg: #f0f0f0;
             --oobe-card: #ffffff;
-            --footer-bg: rgba(243, 243, 243, 0.5); /* Footer specific subtle bg */
+            --footer-bg: rgba(243, 243, 243, 0.5);
         }
 
         /* Dark Theme */
@@ -464,7 +464,6 @@
         .drive-bar-fill { height: 100%; background: var(--accent-color); border-radius: 3px; }
 
         /* Start Menu */
-        /* Fixed Layout Logic: Ensure footer stays at bottom and content doesn't push it out */
         #start-menu { 
             position: absolute; 
             bottom: 58px; 
@@ -481,11 +480,11 @@
             z-index: 9999; 
             display: flex; 
             flex-direction: column; 
-            padding: 24px 24px 64px 24px; /* Bottom padding reserves space for absolute footer */
+            padding: 24px 24px 64px 24px; 
             opacity: 0; 
             pointer-events: none; 
             transition: opacity 0.3s ease, transform 0.4s var(--fluent-ease); 
-            overflow: hidden; /* Ensures rounded corners and no overflow outside box */
+            overflow: hidden;
         }
         #start-menu.active { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
         
@@ -498,16 +497,15 @@
             gap: 16px; 
             margin-bottom: 20px; 
             overflow-y: auto; 
-            max-height: 280px; /* Limit pinned height */
+            max-height: 280px; 
             min-height: 200px;
-            padding-right: 4px; /* Scrollbar space */
+            padding-right: 4px;
         }
         
-        /* Recommend list fills remaining space but doesn't push footer out */
         #recommend-list {
             overflow-y: auto;
             flex: 1;
-            min-height: 0; /* Allows flex shrinking */
+            min-height: 0;
         }
 
         .start-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 4px; border-radius: 4px; transition: background 0.2s; cursor: pointer; }
@@ -516,7 +514,6 @@
         .start-item i { font-size: 28px; }
         .start-item span { font-size: 11px; text-align: center; color: var(--text-color); }
         
-        /* Footer Fixed at Bottom */
         .start-footer { 
             position: absolute;
             bottom: 0;
@@ -525,7 +522,7 @@
             height: 54px;
             background-color: var(--footer-bg); 
             border-top: 1px solid rgba(128,128,128,0.1); 
-            padding: 0 48px; /* Wider padding for Win11 look */
+            padding: 0 48px;
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
@@ -579,7 +576,6 @@
         .taskbar-icon:active { transform: scale(0.9); } 
         .taskbar-icon.active { background-color: var(--active-bg); }
         
-        /* Windows 11 Style Indicator */
         .taskbar-icon.open::after { 
             content: ''; 
             position: absolute; 
@@ -702,7 +698,7 @@
         </div>
 
         <!-- Windows -->
-        <div id="explorer-window" class="window" data-app-id="explorer">
+        <div id="explorer-window" class="window" data-app-id="explorer" data-icon="bi-folder2-open" data-icon-color="#ffe64d">
             <div class="window-header">
                 <div class="window-title"><i class="bi bi-folder2-open" style="color: #ffe64d;"></i> エクスプローラー</div>
                 <div class="window-controls">
@@ -728,7 +724,7 @@
             </div>
         </div>
 
-        <div id="settings-window" class="window" data-app-id="settings">
+        <div id="settings-window" class="window" data-app-id="settings" data-icon="bi-gear-fill" data-icon-color="#9caeb8">
             <div class="window-header">
                 <div class="window-title"><i class="bi bi-gear-fill" style="color: #9caeb8;"></i> 設定</div>
                 <div class="window-controls">
@@ -757,7 +753,7 @@
             </div>
         </div>
 
-        <div id="pc-window" class="window" data-app-id="pc">
+        <div id="pc-window" class="window" data-app-id="pc" data-icon="bi-pc-display" data-icon-color="#50e6ff">
             <div class="window-header">
                 <div class="window-title"><i class="bi bi-pc-display" style="color: #50e6ff;"></i> PC</div>
                 <div class="window-controls">
@@ -773,7 +769,7 @@
             </div>
         </div>
 
-        <div id="recycle-window" class="window" data-app-id="recycle">
+        <div id="recycle-window" class="window" data-app-id="recycle" data-icon="bi-trash" data-icon-color="inherit">
             <div class="window-header">
                 <div class="window-title"><i class="bi bi-trash"></i> ゴミ箱</div>
                 <div class="window-controls">
@@ -792,7 +788,7 @@
             </div>
         </div>
 
-        <div id="notepad-window" class="window" data-app-id="notepad">
+        <div id="notepad-window" class="window" data-app-id="notepad" data-icon="bi-journal-text" data-icon-color="#0078d7">
             <div class="window-header">
                 <div class="window-title"><i class="bi bi-journal-text" style="color: #0078d7;"></i> 無題 - メモ帳</div>
                 <div class="window-controls">
@@ -807,7 +803,7 @@
             </div>
         </div>
 
-        <div id="calculator-window" class="window" data-app-id="calculator" style="width: 320px; height: 450px;">
+        <div id="calculator-window" class="window" data-app-id="calculator" data-icon="bi-calculator-fill" data-icon-color="#0078d7" style="width: 320px; height: 450px;">
             <div class="window-header">
                 <div class="window-title"><i class="bi bi-calculator-fill"></i> 電卓</div>
                 <div class="window-controls">
@@ -830,7 +826,7 @@
             </div>
         </div>
 
-        <div id="universal-app-window" class="window" data-app-id="universal">
+        <div id="universal-app-window" class="window" data-app-id="universal" data-icon="bi-app" data-icon-color="inherit">
             <div class="window-header">
                 <div class="window-title" id="uni-app-title"><i class="bi bi-app"></i> アプリ</div>
                 <div class="window-controls">
@@ -1173,6 +1169,30 @@
         function openWindow(id) {
             const win = document.getElementById(id);
             if(!win) return;
+            
+            // --- Dynamic Taskbar Icon Creation ---
+            const appId = win.dataset.appId;
+            let taskbarIcon = document.getElementById('tb-' + appId);
+            
+            // If icon doesn't exist, create it (Unpinned app behavior)
+            if (!taskbarIcon) {
+                const iconClass = win.dataset.icon || 'bi-app';
+                const iconColor = win.dataset.iconColor || 'inherit';
+                
+                taskbarIcon = document.createElement('div');
+                taskbarIcon.id = 'tb-' + appId;
+                taskbarIcon.className = 'taskbar-icon temp-icon'; // temp-icon marks it as unpinned
+                taskbarIcon.innerHTML = `<i class="bi ${iconClass}" style="color: ${iconColor};"></i>`;
+                taskbarIcon.onclick = () => toggleWindow(id);
+                
+                document.querySelector('.taskbar-center').appendChild(taskbarIcon);
+            } else if (taskbarIcon.classList.contains('temp-icon')) {
+                // If it exists as a temp icon (e.g. universal app switching context), update its icon
+                 const iconClass = win.dataset.icon || 'bi-app';
+                 const iconColor = win.dataset.iconColor || 'inherit';
+                 taskbarIcon.innerHTML = `<i class="bi ${iconClass}" style="color: ${iconColor};"></i>`;
+            }
+
             win.classList.remove('minimized'); 
             win.classList.add('open');
             zIndexCounter++; 
@@ -1202,8 +1222,6 @@
         
         function toggleWindow(id) {
             const win = document.getElementById(id);
-            const appId = win.dataset.appId;
-            const icon = document.getElementById('tb-'+appId);
             
             if(win.classList.contains('open') && !win.classList.contains('minimized') && win.style.zIndex == zIndexCounter) {
                 minimizeWindow(id);
@@ -1227,7 +1245,12 @@
                  icon.classList.add('open');
                  icon.classList.remove('active');
              } else {
+                 // Closed state
                  icon.classList.remove('open', 'active');
+                 // Remove temp icons when closed
+                 if (icon.classList.contains('temp-icon')) {
+                     setTimeout(() => icon.remove(), 200); // Wait for animation if any, or remove immediately
+                 }
              }
         }
         
@@ -1278,8 +1301,14 @@
 
         function openUniversalApp(name, icon, color) {
             const win = document.getElementById('universal-app-window');
+            
+            // Update window metadata for taskbar icon generation
+            win.dataset.icon = icon;
+            win.dataset.iconColor = color;
+
             document.getElementById('uni-app-title').innerHTML = `<i class="bi ${icon}" style="color: ${color}"></i> ${name}`;
             document.getElementById('uni-app-content-area').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;"><i class="bi ${icon}" style="font-size:64px;color:${color};margin-bottom:20px;"></i><h2>${name}</h2></div>`;
+            
             openWindow('universal-app-window');
         }
 
