@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Windows 11 Clone - Action Center & Calendar</title>
+    <title>Windows 11 Clone - Full Screen Fixed</title>
     
     <!-- Fonts: Roboto -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -66,7 +66,7 @@
             }
         }
 
-        /* --- Global Styles --- */
+        /* --- Global Styles (Strict No-Scroll) --- */
         * {
             box-sizing: border-box;
             user-select: none;
@@ -74,20 +74,25 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        body {
+        html, body {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
+            /* 100dvh handles mobile browser bars better */
+            height: 100dvh; 
+            overflow: hidden; /* Prevent scrolling */
+            position: fixed; /* Lock body in place */
+            top: 0;
+            left: 0;
             font-family: var(--font-main);
             color: var(--text-color);
             background-image: var(--bg-wallpaper);
             background-size: cover;
             background-position: center;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
             transition: background-image 0.5s ease;
-            position: relative;
-            touch-action: none;
+            touch-action: none; /* Disable default touch actions */
+            overscroll-behavior: none; /* Disable bounce effect */
         }
 
         /* --- Custom Cursor --- */
@@ -149,13 +154,14 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: calc(100% - 48px);
+            height: calc(100% - 48px); /* Exactly screen height minus taskbar */
             padding: 10px;
             display: flex;
             flex-direction: column;
             flex-wrap: wrap;
             align-content: flex-start;
             z-index: 1;
+            overflow: hidden; /* Ensure icons don't cause scroll */
         }
 
         .desktop-icon {
@@ -391,6 +397,7 @@
             transform: translateX(-50%) translateY(20px);
             width: 640px;
             height: 600px;
+            max-height: calc(100% - 68px); /* Ensure it doesn't overflow top */
             background-color: var(--glass-bg);
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
@@ -444,6 +451,7 @@
             grid-template-columns: repeat(6, 1fr);
             gap: 16px;
             margin-bottom: 30px;
+            overflow-y: auto; /* Scroll internal content if needed */
         }
 
         .start-item {
@@ -766,7 +774,7 @@
         
         /* Responsive */
         @media (max-width: 768px) {
-            #start-menu { width: 95%; height: 80%; bottom: 50px; }
+            #start-menu { width: 95%; bottom: 50px; }
             .window { width: 90%; left: 5% !important; top: 5% !important; height: 70%; }
             .window.maximized { width: 100% !important; left: 0 !important; top: 0 !important; }
             .taskbar-center { gap: 2px; }
@@ -1266,15 +1274,14 @@
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
             
-            // Date formatting for Calendar Flyout
             const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
             const dayName = days[now.getDay()];
 
-            // Taskbar Display
+            // Taskbar
             timeElem.textContent = `${hours}:${minutes}`;
             dateElem.textContent = `${year}/${month}/${day}`;
 
-            // Calendar Flyout Display
+            // Calendar Flyout
             calFullDate.textContent = `${year}年 ${month}月 ${day}日 ${dayName}`;
             calTimeLarge.textContent = `${hours}:${minutes}:${seconds}`;
         }
@@ -1293,12 +1300,10 @@
             const prevLastDate = new Date(year, month, 0).getDate();
             
             const calendarGrid = document.querySelector('.calendar-grid');
-            // Keep headers
             const headers = Array.from(calendarGrid.children).slice(0, 7);
             calendarGrid.innerHTML = '';
             headers.forEach(h => calendarGrid.appendChild(h));
             
-            // Previous month days
             for (let i = firstDay; i > 0; i--) {
                 const day = document.createElement('div');
                 day.className = 'cal-day faded';
@@ -1306,7 +1311,6 @@
                 calendarGrid.appendChild(day);
             }
             
-            // Current month days
             for (let i = 1; i <= lastDate; i++) {
                 const day = document.createElement('div');
                 day.className = 'cal-day';
@@ -1315,8 +1319,7 @@
                 calendarGrid.appendChild(day);
             }
             
-            // Next month days (fill grid)
-            const remainingCells = 42 - (firstDay + lastDate); // 6 rows * 7 cols
+            const remainingCells = 42 - (firstDay + lastDate);
             for (let i = 1; i <= remainingCells; i++) {
                 const day = document.createElement('div');
                 day.className = 'cal-day faded';
@@ -1368,7 +1371,6 @@
             btn.classList.toggle('active');
         }
 
-        // Power Menu Toggle
         powerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             powerMenu.classList.toggle('active');
@@ -1405,9 +1407,7 @@
             }
         }
 
-        // Close menus when clicking outside
         document.addEventListener('click', function(e) {
-            // Start Menu
             if (!startMenu.contains(e.target) && !startBtn.contains(e.target) &&
                 !powerBtn.contains(e.target) && !powerMenu.contains(e.target) &&
                 !actionCenter.contains(e.target) && !e.target.closest('.system-tray') &&
@@ -1703,7 +1703,6 @@
             document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
         });
 
-        // Add touch double-tap support
         document.querySelectorAll('.desktop-icon').forEach(icon => {
             let lastTap = 0;
             icon.addEventListener('touchstart', (e) => {
