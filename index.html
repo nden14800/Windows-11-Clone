@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Windows 11 Clone - Action Center & Calendar</title>
+    
+    <!-- Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons: Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        /* --- CSS Variables & Theming --- */
+        :root {
+            --font-main: 'Roboto', sans-serif;
+            /* Fluent Design Easing */
+            --fluent-ease: cubic-bezier(0.1, 0.9, 0.2, 1.0); 
+            --fluent-duration: 0.4s;
+        }
+
+        /* Light Theme (Default) */
+        :root {
+            --bg-wallpaper: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop');
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --taskbar-bg: rgba(243, 243, 243, 0.85);
+            --text-color: #202020;
+            --hover-bg: rgba(0, 0, 0, 0.05);
+            --active-bg: rgba(0, 0, 0, 0.1);
+            --window-shadow: 0 12px 40px rgba(0,0,0,0.18);
+            --accent-color: #0067c0;
+            --input-bg: #ffffff;
+            --spinner-color: #007bff;
+            --menu-bg: #ffffff;
+            --qs-btn-bg: #ffffff;
+            --qs-btn-active: #0067c0;
+            --qs-btn-color: #202020;
+            --qs-btn-active-color: #ffffff;
+            --slider-bg: #d0d0d0;
+        }
+
+        /* Dark Theme (Auto-detected) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-wallpaper: url('https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop');
+                --glass-bg: rgba(32, 32, 32, 0.9);
+                --glass-border: rgba(255, 255, 255, 0.15);
+                --taskbar-bg: rgba(32, 32, 32, 0.85);
+                --text-color: #ffffff;
+                --hover-bg: rgba(255, 255, 255, 0.08);
+                --active-bg: rgba(255, 255, 255, 0.12);
+                --window-shadow: 0 12px 40px rgba(0,0,0,0.6);
+                --accent-color: #60cdff;
+                --input-bg: #2b2b2b;
+                --spinner-color: #1a73e8;
+                --menu-bg: #2b2b2b;
+                --qs-btn-bg: #3c3c3c;
+                --qs-btn-active: #60cdff;
+                --qs-btn-color: #ffffff;
+                --qs-btn-active-color: #202020;
+                --slider-bg: #4a4a4a;
+            }
+        }
+
+        /* --- Global Styles --- */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            cursor: none !important; /* Hide system cursor */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            color: var(--text-color);
+            background-image: var(--bg-wallpaper);
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            transition: background-image 0.5s ease;
+            position: relative;
+            touch-action: none;
+        }
+
+        /* --- Custom Cursor --- */
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999999;
+            pointer-events: none;
+            display: block;
+            width: 24px;
+            height: 24px;
+            color: var(--text-color);
+            filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)) drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+            will-change: transform;
+        }
+        @media (prefers-color-scheme: dark) { #custom-cursor { color: white; } }
+        @media (prefers-color-scheme: light) { #custom-cursor { color: black; } }
+
+        /* --- Loading Overlay --- */
+        #boot-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .loader {
+            width: 80px;
+            height: 80px;
+            animation: rotate 1s linear infinite;
+            transform-origin: center center;
+        }
+
+        .loader .path {
+            stroke: var(--spinner-color);
+            stroke-linecap: round;
+            stroke-dasharray: 89 150;
+            stroke-dashoffset: 0;
+            stroke-width: 2.5;
+            fill: none;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Desktop Area --- */
+        #desktop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 48px);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            z-index: 1;
+        }
+
+        .desktop-icon {
+            width: 86px;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px 5px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            border: 1px solid transparent;
+            transition: background-color 0.1s, border-color 0.1s;
+        }
+
+        .desktop-icon:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .desktop-icon.selected {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .desktop-icon i {
+            font-size: 32px;
+            margin-bottom: 5px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+            transition: transform 0.1s;
+        }
+        
+        .desktop-icon:active i {
+            transform: scale(0.95);
+        }
+
+        .desktop-icon span {
+            font-size: 12px;
+            text-align: center;
+            color: #fff;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* --- Window System --- */
+        .window {
+            position: absolute;
+            width: 600px;
+            height: 400px;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            box-shadow: var(--window-shadow);
+            display: flex;
+            flex-direction: column;
+            top: 100px;
+            left: 100px;
+            overflow: hidden;
+            pointer-events: none;
+            
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+
+            transition: 
+                transform var(--fluent-duration) var(--fluent-ease),
+                opacity var(--fluent-duration) ease,
+                width 0.3s var(--fluent-ease),
+                height 0.3s var(--fluent-ease),
+                top 0.3s var(--fluent-ease),
+                left 0.3s var(--fluent-ease);
+            
+            will-change: transform, opacity, top, left, width, height;
+        }
+
+        .window.dragging {
+            transition: none !important;
+            opacity: 0.95;
+            transform: scale(1.02);
+        }
+
+        .window.open {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+
+        .window.minimized {
+            opacity: 0;
+            transform: scale(0.7) translateY(100px);
+            pointer-events: none;
+        }
+
+        .window.maximized {
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: calc(100% - 48px) !important;
+            border-radius: 0;
+            transform: none !important;
+            transition: width 0.3s var(--fluent-ease), height 0.3s var(--fluent-ease), top 0.3s var(--fluent-ease), left 0.3s var(--fluent-ease);
+        }
+
+        .window-header {
+            height: 40px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 0 0 12px;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+            width: 100%;
+        }
+
+        .window-title {
+            font-size: 12px;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            height: 100%;
+            pointer-events: none;
+        }
+        .window-title > * { pointer-events: none; }
+
+        .window-controls {
+            display: flex;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .control-btn {
+            width: 46px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: background 0.15s;
+            border-radius: 4px;
+            margin: 2px;
+            height: calc(100% - 4px);
+        }
+
+        .control-btn:hover { background-color: var(--hover-bg); }
+        .control-btn.close:hover { background-color: #e81123; color: white; }
+
+        .window-content {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            font-size: 14px;
+            position: relative;
+        }
+
+        /* App Specifics */
+        .notepad-area {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            resize: none;
+            outline: none;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            color: var(--text-color);
+            cursor: none;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            height: 100%;
+        }
+        .calc-display {
+            grid-column: span 4;
+            background: transparent;
+            text-align: right;
+            font-size: 32px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .calc-btn {
+            background: var(--hover-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .calc-btn:hover { background: var(--active-bg); }
+        .calc-btn:active { transform: scale(0.95); }
+        .calc-btn.accent { background: var(--accent-color); color: white; }
+
+        .drive-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .drive-item:hover { background-color: var(--hover-bg); }
+        .drive-bar-bg {
+            width: 200px;
+            height: 6px;
+            background: rgba(128,128,128,0.3);
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+        .drive-bar-fill {
+            height: 100%;
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+        /* --- Start Menu --- */
+        #start-menu {
+            position: absolute;
+            bottom: 58px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            width: 640px;
+            height: 600px;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            box-shadow: var(--window-shadow);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            
+            opacity: 0;
+            pointer-events: none;
+            
+            transition: 
+                opacity 0.3s ease, 
+                transform 0.4s var(--fluent-ease);
+        }
+
+        #start-menu.active {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
+        }
+
+        .start-search {
+            background-color: var(--input-bg);
+            border: 1px solid transparent;
+            border-bottom: 2px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: var(--text-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .start-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .start-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .start-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .start-item:hover { background-color: var(--hover-bg); }
+        .start-item:active { transform: scale(0.95); transition: transform 0.1s; }
+        .start-item i { font-size: 28px; }
+        .start-item span {
+            font-size: 11px;
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        .start-footer {
+            margin-top: auto;
+            border-top: 1px solid rgba(128,128,128,0.1);
+            padding-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .user-profile:hover { background-color: var(--hover-bg); }
+
+        /* --- Power Menu Popup --- */
+        #power-menu {
+            position: absolute;
+            bottom: 50px;
+            right: 0;
+            width: 160px;
+            background-color: var(--menu-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            flex-direction: column;
+            padding: 4px;
+            z-index: 10001;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        
+        #power-menu.active { 
+            display: flex; 
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .power-item {
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            border-radius: 4px;
+            color: var(--text-color);
+        }
+        .power-item:hover { background-color: var(--hover-bg); }
+
+        /* --- Action Center (WiFi/Audio) Flyout --- */
+        #action-center {
+            position: absolute;
+            bottom: 58px;
+            right: 10px;
+            width: 360px;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            box-shadow: var(--window-shadow);
+            z-index: 9998;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(20px);
+            transition: opacity 0.2s, transform 0.2s var(--fluent-ease);
+        }
+
+        #action-center.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+
+        .quick-settings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .qs-btn {
+            background-color: var(--qs-btn-bg);
+            height: 50px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid rgba(128,128,128,0.1);
+            transition: all 0.2s;
+            color: var(--qs-btn-color);
+            font-size: 18px;
+        }
+
+        .qs-btn:hover { background-color: var(--hover-bg); }
+        .qs-btn:active { transform: scale(0.96); }
+
+        .qs-btn.active {
+            background-color: var(--qs-btn-active);
+            color: var(--qs-btn-active-color);
+            border-color: transparent;
+        }
+
+        .qs-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .qs-slider-container i { font-size: 20px; width: 24px; text-align: center; }
+        
+        .qs-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--slider-bg);
+            border-radius: 2px;
+            outline: none;
+        }
+        .qs-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            border: 4px solid var(--menu-bg);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .qs-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        /* --- Calendar Flyout --- */
+        #calendar-flyout {
+            position: absolute;
+            bottom: 58px;
+            right: 10px;
+            width: 360px;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            box-shadow: var(--window-shadow);
+            z-index: 9998;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: opacity 0.2s, transform 0.2s var(--fluent-ease);
+        }
+
+        #calendar-flyout.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .calendar-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .cal-full-date { font-size: 14px; opacity: 0.8; margin-bottom: 4px; }
+        .cal-time-large { font-size: 42px; font-weight: 300; line-height: 1.1; }
+
+        .calendar-body h4 { margin: 0 0 15px 0; font-size: 15px; display: flex; justify-content: space-between; }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .cal-day-name { font-weight: bold; padding: 8px 0; }
+        .cal-day { 
+            padding: 8px 0; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            width: 32px; height: 32px; 
+            margin: 0 auto; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .cal-day:hover { background-color: var(--hover-bg); }
+        .cal-day.today { background-color: var(--accent-color); color: white; font-weight: bold; }
+        .cal-day.faded { opacity: 0.3; }
+
+        /* --- Taskbar --- */
+        #taskbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 48px;
+            background-color: var(--taskbar-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 0 10px;
+        }
+
+        .taskbar-center {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 100%;
+        }
+
+        .taskbar-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            transition: all 0.2s var(--fluent-ease);
+            position: relative;
+            color: var(--text-color);
+        }
+
+        .taskbar-icon:hover { background-color: var(--hover-bg); }
+        .taskbar-icon:active { transform: scale(0.9); } 
+        .taskbar-icon.active { background-color: var(--active-bg); }
+
+        .taskbar-icon.open::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            width: 6px;
+            height: 3px;
+            background-color: var(--text-color);
+            border-radius: 2px;
+            transition: width 0.3s var(--fluent-ease), background-color 0.3s;
+        }
+        
+        .taskbar-icon.open.active::after {
+            width: 16px;
+            background-color: var(--accent-color);
+        }
+
+        .taskbar-right {
+            position: absolute;
+            right: 10px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .system-tray {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 12px;
+            height: 40px;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .system-tray:hover { background-color: var(--hover-bg); }
+
+        .clock-area {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0 12px;
+            height: 40px;
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.2;
+            transition: background 0.2s;
+        }
+        .clock-area:hover { background-color: var(--hover-bg); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 128, 0.6); }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            #start-menu { width: 95%; height: 80%; bottom: 50px; }
+            .window { width: 90%; left: 5% !important; top: 5% !important; height: 70%; }
+            .window.maximized { width: 100% !important; left: 0 !important; top: 0 !important; }
+            .taskbar-center { gap: 2px; }
+            .taskbar-icon { width: 36px; font-size: 20px; }
+            #action-center, #calendar-flyout { right: 50%; transform: translateX(50%) translateY(20px); width: 90%; }
+            #action-center.active, #calendar-flyout.active { transform: translateX(50%) translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div id="custom-cursor">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-cursor" viewBox="0 0 16 16">
+            <path d="M14.082 2.182a.5.5 0 0 1 .103.557L8.528 15.467a.5.5 0 0 1-.917-.007L5.57 10.694.803 8.652a.5.5 0 0 1-.006-.916l12.728-5.657a.5.5 0 0 1 .556.103zM2.25 8.184l3.897 1.67a.5.5 0 0 1 .262.263l1.67 3.897L12.743 3.52z"/>
+        </svg>
+    </div>
+
+    <!-- Boot/Loading Screen -->
+    <div id="boot-screen">
+        <svg id="spinner" class="loader" viewBox="0 0 50 50">
+            <circle class="path" cx="25" cy="25" r="20"></circle>
+        </svg>
+    </div>
+
+    <!-- Desktop Icons -->
+    <div id="desktop">
+        <div class="desktop-icon" onclick="selectIcon(this, event)" ondblclick="openWindow('pc-window')" data-open="pc-window">
+            <i class="bi bi-pc-display" style="color: #50e6ff;"></i>
+            <span>PC</span>
+        </div>
+        <div class="desktop-icon" onclick="selectIcon(this, event)" ondblclick="openWindow('recycle-window')" data-open="recycle-window" data-type="recycle">
+            <i class="bi bi-trash" style="color: #cccccc;"></i>
+            <span>ゴミ箱</span>
+        </div>
+        <div class="desktop-icon" onclick="selectIcon(this, event)" ondblclick="openWindow('explorer-window')" data-open="explorer-window">
+            <i class="bi bi-folder2-open" style="color: #ffe64d;"></i>
+            <span>エクスプローラー</span>
+        </div>
+        <div class="desktop-icon" onclick="selectIcon(this, event)" ondblclick="openWindow('settings-window')" data-open="settings-window">
+            <i class="bi bi-gear-fill" style="color: #9caeb8;"></i>
+            <span>設定</span>
+        </div>
+    </div>
+
+    <!-- ================= Windows ================= -->
+    
+    <!-- 1. File Explorer Window -->
+    <div id="explorer-window" class="window" data-app-id="explorer">
+        <div class="window-header">
+            <div class="window-title"><i class="bi bi-folder2-open" style="color: #ffe64d;"></i> エクスプローラー</div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="minimizeWindow('explorer-window')"><i class="bi bi-dash-lg"></i></div>
+                <div class="control-btn" onclick="toggleMaximize('explorer-window')"><i class="bi bi-square"></i></div>
+                <div class="control-btn close" onclick="closeWindow('explorer-window')"><i class="bi bi-x-lg"></i></div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div style="padding-bottom: 10px; border-bottom: 1px solid var(--glass-border); margin-bottom: 15px;">
+                <span style="margin-right: 15px; font-weight: 500;">新規</span>
+                <span style="margin-right: 15px;">切り取り</span>
+                <span style="margin-right: 15px;">コピー</span>
+                <span>貼り付け</span>
+            </div>
+            <h3>クイックアクセス</h3>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                <div style="text-align:center; width:90px; padding:10px; border-radius:4px;" class="start-item">
+                    <i class="bi bi-file-earmark-text" style="font-size:36px; color:#50e6ff;"></i><br>
+                    ドキュメント
+                </div>
+                <div style="text-align:center; width:90px; padding:10px; border-radius:4px;" class="start-item">
+                    <i class="bi bi-card-image" style="font-size:36px; color:#c850ff;"></i><br>
+                    ピクチャ
+                </div>
+                <div style="text-align:center; width:90px; padding:10px; border-radius:4px;" class="start-item">
+                    <i class="bi bi-music-note-beamed" style="font-size:36px; color:#ff5083;"></i><br>
+                    ミュージック
+                </div>
+                <div style="text-align:center; width:90px; padding:10px; border-radius:4px;" class="start-item">
+                    <i class="bi bi-download" style="font-size:36px; color:#28a745;"></i><br>
+                    ダウンロード
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Settings Window -->
+    <div id="settings-window" class="window" data-app-id="settings">
+        <div class="window-header">
+            <div class="window-title"><i class="bi bi-gear-fill" style="color: #9caeb8;"></i> 設定</div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="minimizeWindow('settings-window')"><i class="bi bi-dash-lg"></i></div>
+                <div class="control-btn" onclick="toggleMaximize('settings-window')"><i class="bi bi-square"></i></div>
+                <div class="control-btn close" onclick="closeWindow('settings-window')"><i class="bi bi-x-lg"></i></div>
+            </div>
+        </div>
+        <div class="window-content" style="display: flex;">
+            <div style="width: 150px; border-right: 1px solid var(--glass-border); padding-right: 10px;">
+                <div style="padding: 8px; background: var(--active-bg); border-radius: 4px; margin-bottom: 5px;">システム</div>
+                <div style="padding: 8px; border-radius: 4px;">Bluetooth</div>
+                <div style="padding: 8px; border-radius: 4px;">ネットワーク</div>
+                <div style="padding: 8px; border-radius: 4px;">個人用設定</div>
+                <div style="padding: 8px; border-radius: 4px;">アプリ</div>
+            </div>
+            <div style="flex: 1; padding-left: 20px;">
+                <h2 style="margin-top:0;">システム</h2>
+                <div style="background: var(--hover-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px;">
+                    <i class="bi bi-laptop" style="font-size: 24px;"></i>
+                    <div>
+                        <div style="font-weight: bold;">ディスプレイ</div>
+                        <div style="font-size: 12px; opacity: 0.7;">モニター、明るさ、夜間モード</div>
+                    </div>
+                </div>
+                <div style="background: var(--hover-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px;">
+                    <i class="bi bi-volume-up" style="font-size: 24px;"></i>
+                    <div>
+                        <div style="font-weight: bold;">サウンド</div>
+                        <div style="font-size: 12px; opacity: 0.7;">ボリューム、出力、入力</div>
+                    </div>
+                </div>
+                <div style="background: var(--hover-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px;">
+                    <i class="bi bi-battery-charging" style="font-size: 24px;"></i>
+                    <div>
+                        <div style="font-weight: bold;">電源とバッテリー</div>
+                        <div style="font-size: 12px; opacity: 0.7;">スリープ、バッテリー使用量</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. PC Window -->
+    <div id="pc-window" class="window" data-app-id="pc">
+        <div class="window-header">
+            <div class="window-title"><i class="bi bi-pc-display" style="color: #50e6ff;"></i> PC</div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="minimizeWindow('pc-window')"><i class="bi bi-dash-lg"></i></div>
+                <div class="control-btn" onclick="toggleMaximize('pc-window')"><i class="bi bi-square"></i></div>
+                <div class="control-btn close" onclick="closeWindow('pc-window')"><i class="bi bi-x-lg"></i></div>
+            </div>
+        </div>
+        <div class="window-content">
+            <h4>デバイスとドライブ</h4>
+            <div class="drive-item">
+                <i class="bi bi-hdd-fill" style="font-size: 40px; color: #9caeb8;"></i>
+                <div>
+                    <div style="font-size: 14px;">Local Disk (C:)</div>
+                    <div class="drive-bar-bg"><div class="drive-bar-fill" style="width: 60%;"></div></div>
+                    <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">120 GB / 256 GB 空き</div>
+                </div>
+            </div>
+            <div class="drive-item">
+                <i class="bi bi-hdd-fill" style="font-size: 40px; color: #9caeb8;"></i>
+                <div>
+                    <div style="font-size: 14px;">Data (D:)</div>
+                    <div class="drive-bar-bg"><div class="drive-bar-fill" style="width: 20%;"></div></div>
+                    <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">800 GB / 1 TB 空き</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Recycle Bin Window -->
+    <div id="recycle-window" class="window" data-app-id="recycle">
+        <div class="window-header">
+            <div class="window-title"><i class="bi bi-trash"></i> ゴミ箱</div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="minimizeWindow('recycle-window')"><i class="bi bi-dash-lg"></i></div>
+                <div class="control-btn" onclick="toggleMaximize('recycle-window')"><i class="bi bi-square"></i></div>
+                <div class="control-btn close" onclick="closeWindow('recycle-window')"><i class="bi bi-x-lg"></i></div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div style="padding: 10px 0; border-bottom: 1px solid var(--glass-border); margin-bottom: 20px;">
+                <button style="padding: 6px 12px; background: transparent; border: 1px solid var(--glass-border); color: var(--text-color); border-radius: 4px;">
+                    ゴミ箱を空にする
+                </button>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60%; opacity: 0.6;">
+                <i class="bi bi-folder2-open" style="font-size: 48px; margin-bottom: 10px;"></i>
+                <span>このフォルダーは空です。</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Notepad Window -->
+    <div id="notepad-window" class="window" data-app-id="notepad">
+        <div class="window-header">
+            <div class="window-title"><i class="bi bi-journal-text" style="color: #0078d7;"></i> 無題 - メモ帳</div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="minimizeWindow('notepad-window')"><i class="bi bi-dash-lg"></i></div>
+                <div class="control-btn" onclick="toggleMaximize('notepad-window')"><i class="bi bi-square"></i></div>
+                <div class="control-btn close" onclick="closeWindow('notepad-window')"><i class="bi bi-x-lg"></i></div>
+            </div>
+        </div>
+        <div class="window-content" style="padding: 0;">
+            <div style="padding: 4px 10px; border-bottom: 1px solid var(--glass-border); font-size: 12px;">
+                <span style="margin-right: 10px;">ファイル</span>
+                <span style="margin-right: 10px;">編集</span>
+                <span style="margin-right: 10px;">表示</span>
+            </div>
+            <div style="padding: 10px; height: calc(100% - 28px);">
+                <textarea class="notepad-area" placeholder="ここに入力..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Calculator Window -->
+    <div id="calculator-window" class="window" data-app-id="calculator" style="width: 320px; height: 450px;">
+        <div class="window-header">
+            <div class="window-title"><i class="bi bi-calculator-fill"></i> 電卓</div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="minimizeWindow('calculator-window')"><i class="bi bi-dash-lg"></i></div>
+                <div class="control-btn" onclick="toggleMaximize('calculator-window')"><i class="bi bi-square"></i></div>
+                <div class="control-btn close" onclick="closeWindow('calculator-window')"><i class="bi bi-x-lg"></i></div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div style="height: 100%; display: flex; flex-direction: column;">
+                <div class="calc-display" id="calc-display">0</div>
+                <div class="calc-grid">
+                    <div class="calc-btn" onclick="clearCalc()">C</div>
+                    <div class="calc-btn" onclick="appendOp('/')">/</div>
+                    <div class="calc-btn" onclick="appendOp('*')">×</div>
+                    <div class="calc-btn" onclick="deleteChar()"><i class="bi bi-backspace"></i></div>
+                    
+                    <div class="calc-btn" onclick="appendNum('7')">7</div>
+                    <div class="calc-btn" onclick="appendNum('8')">8</div>
+                    <div class="calc-btn" onclick="appendNum('9')">9</div>
+                    <div class="calc-btn" onclick="appendOp('-')">-</div>
+                    
+                    <div class="calc-btn" onclick="appendNum('4')">4</div>
+                    <div class="calc-btn" onclick="appendNum('5')">5</div>
+                    <div class="calc-btn" onclick="appendNum('6')">6</div>
+                    <div class="calc-btn" onclick="appendOp('+')">+</div>
+                    
+                    <div class="calc-btn" onclick="appendNum('1')">1</div>
+                    <div class="calc-btn" onclick="appendNum('2')">2</div>
+                    <div class="calc-btn" onclick="appendNum('3')">3</div>
+                    <div class="calc-btn accent" style="grid-row: span 2;" onclick="calcResult()">=</div>
+                    
+                    <div class="calc-btn" style="grid-column: span 2;" onclick="appendNum('0')">0</div>
+                    <div class="calc-btn" onclick="appendNum('.')">.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Universal App Container -->
+    <div id="universal-app-window" class="window" data-app-id="universal">
+        <div class="window-header">
+            <div class="window-title" id="uni-app-title"><i class="bi bi-app"></i> アプリ</div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="minimizeWindow('universal-app-window')"><i class="bi bi-dash-lg"></i></div>
+                <div class="control-btn" onclick="toggleMaximize('universal-app-window')"><i class="bi bi-square"></i></div>
+                <div class="control-btn close" onclick="closeWindow('universal-app-window')"><i class="bi bi-x-lg"></i></div>
+            </div>
+        </div>
+        <div class="window-content" id="uni-app-content-area">
+            <!-- Content injected by JS -->
+        </div>
+    </div>
+
+    <!-- Action Center (Quick Settings) -->
+    <div id="action-center">
+        <div class="quick-settings-grid">
+            <div class="qs-btn active" onclick="toggleQS(this)"><i class="bi bi-wifi"></i></div>
+            <div class="qs-btn active" onclick="toggleQS(this)"><i class="bi bi-bluetooth"></i></div>
+            <div class="qs-btn" onclick="toggleQS(this)"><i class="bi bi-airplane"></i></div>
+            <div class="qs-btn" onclick="toggleQS(this)"><i class="bi bi-battery-half"></i></div>
+            <div class="qs-btn" onclick="toggleQS(this)"><i class="bi bi-moon-stars"></i></div>
+            <div class="qs-btn" onclick="toggleQS(this)"><i class="bi bi-person-wheelchair"></i></div>
+        </div>
+        
+        <div class="qs-slider-container">
+            <i class="bi bi-brightness-high"></i>
+            <input type="range" class="qs-slider" value="80">
+        </div>
+        <div class="qs-slider-container">
+            <i class="bi bi-volume-up"></i>
+            <input type="range" class="qs-slider" value="60">
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-top:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="bi bi-battery-full" style="font-size:16px;"></i> 85%
+            </div>
+            <i class="bi bi-gear" style="font-size:16px; cursor:pointer;"></i>
+        </div>
+    </div>
+
+    <!-- Calendar Flyout -->
+    <div id="calendar-flyout">
+        <div class="calendar-header">
+            <div class="cal-full-date" id="cal-full-date">2023年 11月 19日</div>
+            <div class="cal-time-large" id="cal-time-large">12:00:00</div>
+        </div>
+        <div class="calendar-body">
+            <h4 id="cal-month-year">2023年 11月 <div style="display:flex; gap:10px;"><i class="bi bi-chevron-up"></i><i class="bi bi-chevron-down"></i></div></h4>
+            <div class="calendar-grid">
+                <div class="cal-day-name">日</div>
+                <div class="cal-day-name">月</div>
+                <div class="cal-day-name">火</div>
+                <div class="cal-day-name">水</div>
+                <div class="cal-day-name">木</div>
+                <div class="cal-day-name">金</div>
+                <div class="cal-day-name">土</div>
+                <!-- Days injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Menu -->
+    <div id="start-menu">
+        <div class="start-search">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="アプリ、設定、ドキュメントの検索" style="background:transparent; border:none; color:inherit; outline:none; width:100%; cursor:none;">
+        </div>
+
+        <div class="start-section-title">
+            <span>ピン留め済み</span>
+            <button style="border:none; background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; color:inherit;">すべてのアプリ <i class="bi bi-chevron-right"></i></button>
+        </div>
+
+        <div class="start-grid">
+            <div class="start-item" onclick="openUniversalApp('メール', 'bi-envelope-at-fill', '#0078d7')">
+                <i class="bi bi-envelope-at-fill" style="color: #0078d7;"></i>
+                <span>メール</span>
+            </div>
+            <div class="start-item" onclick="openUniversalApp('カレンダー', 'bi-calendar-week', '#0078d7')">
+                <i class="bi bi-calendar-week" style="color: #0078d7;"></i>
+                <span>カレンダー</span>
+            </div>
+            <div class="start-item" onclick="openUniversalApp('Microsoft Store', 'bi-microsoft', '#0078d7')">
+                <i class="bi bi-microsoft" style="color: #0078d7;"></i>
+                <span>Store</span>
+            </div>
+            <div class="start-item" onclick="openUniversalApp('フォト', 'bi-image-fill', '#0078d7')">
+                <i class="bi bi-image-fill" style="color: #0078d7;"></i>
+                <span>フォト</span>
+            </div>
+            <div class="start-item" onclick="openWindow('settings-window')">
+                <i class="bi bi-gear-fill" style="color: #9caeb8;"></i>
+                <span>設定</span>
+            </div>
+            <div class="start-item" onclick="openWindow('calculator-window')">
+                <i class="bi bi-calculator-fill" style="color: #0078d7;"></i>
+                <span>電卓</span>
+            </div>
+            <div class="start-item" onclick="openUniversalApp('クロック', 'bi-clock-fill', '#0078d7')">
+                <i class="bi bi-clock-fill" style="color: #0078d7;"></i>
+                <span>クロック</span>
+            </div>
+            <div class="start-item" onclick="openWindow('notepad-window')">
+                <i class="bi bi-journal-text" style="color: #0078d7;"></i>
+                <span>メモ帳</span>
+            </div>
+            <div class="start-item" onclick="openWindow('explorer-window')">
+                <i class="bi bi-folder2-open" style="color: #ffe64d;"></i>
+                <span>エクスプローラー</span>
+            </div>
+            <div class="start-item" onclick="openUniversalApp('カメラ', 'bi-camera-video-fill', '#0078d7')">
+                <i class="bi bi-camera-video-fill" style="color: #0078d7;"></i>
+                <span>カメラ</span>
+            </div>
+             <div class="start-item" onclick="openUniversalApp('マップ', 'bi-map-fill', '#0078d7')">
+                <i class="bi bi-map-fill" style="color: #0078d7;"></i>
+                <span>マップ</span>
+            </div>
+             <div class="start-item" onclick="openWindow('pc-window')">
+                <i class="bi bi-pc-display" style="color: #50e6ff;"></i>
+                <span>PC</span>
+            </div>
+        </div>
+
+        <div class="start-section-title">
+            <span>おすすめ</span>
+        </div>
+        <div style="flex:1; padding: 10px 0;">
+            <div class="start-item" style="flex-direction: row; align-items: center; gap: 15px; padding: 8px 12px;">
+                <i class="bi bi-file-word-fill" style="font-size: 20px; color: #2b579a;"></i>
+                <div style="display:flex; flex-direction: column; align-items: flex-start;">
+                    <span style="font-size: 12px;">プロジェクト提案書.docx</span>
+                    <span style="font-size: 10px; opacity: 0.6;">15分前</span>
+                </div>
+            </div>
+            <div class="start-item" style="flex-direction: row; align-items: center; gap: 15px; padding: 8px 12px;">
+                <i class="bi bi-file-pdf-fill" style="font-size: 20px; color: #e13a3a;"></i>
+                <div style="display:flex; flex-direction: column; align-items: flex-start;">
+                    <span style="font-size: 12px;">請求書_202310.pdf</span>
+                    <span style="font-size: 10px; opacity: 0.6;">2時間前</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="start-footer">
+            <div class="user-profile">
+                <div style="width:30px; height:30px; background: #0078d4; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">User</div>
+                <span style="font-size: 12px; font-weight: 500;">Windows ユーザー</span>
+            </div>
+            <div class="control-btn" id="power-btn" style="width: 36px; border-radius: 4px;">
+                <i class="bi bi-power"></i>
+            </div>
+            <!-- Power Menu Popup -->
+            <div id="power-menu">
+                <div class="power-item" onclick="powerAction('sleep')">
+                    <i class="bi bi-moon"></i> スリープ
+                </div>
+                <div class="power-item" onclick="powerAction('shutdown')">
+                    <i class="bi bi-power"></i> シャットダウン
+                </div>
+                <div class="power-item" onclick="powerAction('restart')">
+                    <i class="bi bi-arrow-counterclockwise"></i> 再起動
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Taskbar -->
+    <div id="taskbar">
+        <div class="taskbar-center">
+            <div class="taskbar-icon" id="start-btn" onclick="toggleStartMenu()">
+                <i class="bi bi-windows" style="color: #0078d4;"></i>
+            </div>
+            <div class="taskbar-icon">
+                <i class="bi bi-search"></i>
+            </div>
+            <div class="taskbar-icon">
+                <i class="bi bi-grid-fill"></i>
+            </div>
+            <div class="taskbar-icon">
+                <i class="bi bi-chat-left-text"></i>
+            </div>
+            <!-- App Icons -->
+            <div class="taskbar-icon" id="tb-explorer" onclick="toggleWindow('explorer-window')">
+                <i class="bi bi-folder2-open" style="color: #ffe64d;"></i>
+            </div>
+            <div class="taskbar-icon" id="tb-settings" onclick="toggleWindow('settings-window')">
+                <i class="bi bi-gear-fill" style="color: #9caeb8;"></i>
+            </div>
+        </div>
+
+        <div class="taskbar-right">
+            <div class="system-tray" onclick="toggleActionCenter()">
+                <i class="bi bi-chevron-up" style="font-size: 12px;"></i>
+                <i class="bi bi-wifi"></i>
+                <i class="bi bi-volume-up"></i>
+                <i class="bi bi-battery-full"></i>
+            </div>
+            <div class="clock-area" onclick="toggleCalendar()">
+                <div id="clock-time">12:00</div>
+                <div id="clock-date">2023/01/01</div>
+            </div>
+            <div style="width: 4px; height: 100%; border-left: 1px solid var(--glass-border); margin-left: 4px;"></div>
+        </div>
+    </div>
+
+    <script>
+        /* --- Custom Cursor Logic --- */
+        const cursor = document.getElementById('custom-cursor');
+
+        const moveCursor = (e) => {
+            let x, y;
+            if (e.type.includes('touch')) {
+                if(e.touches.length > 0) {
+                    x = e.touches[0].clientX;
+                    y = e.touches[0].clientY;
+                }
+            } else {
+                x = e.clientX;
+                y = e.clientY;
+            }
+            
+            if(x !== undefined && y !== undefined) {
+                cursor.style.transform = `translate(${x}px, ${y}px)`;
+            }
+        };
+
+        window.addEventListener('mousemove', moveCursor);
+        window.addEventListener('touchmove', moveCursor, { passive: false });
+        window.addEventListener('touchstart', moveCursor, { passive: false });
+
+
+        /* --- Clock & Calendar Functionality --- */
+        function updateClock() {
+            const now = new Date();
+            const timeElem = document.getElementById('clock-time');
+            const dateElem = document.getElementById('clock-date');
+            const calFullDate = document.getElementById('cal-full-date');
+            const calTimeLarge = document.getElementById('cal-time-large');
+            
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            
+            // Date formatting for Calendar Flyout
+            const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+            const dayName = days[now.getDay()];
+
+            // Taskbar Display
+            timeElem.textContent = `${hours}:${minutes}`;
+            dateElem.textContent = `${year}/${month}/${day}`;
+
+            // Calendar Flyout Display
+            calFullDate.textContent = `${year}年 ${month}月 ${day}日 ${dayName}`;
+            calTimeLarge.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function generateCalendar() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            document.getElementById('cal-month-year').innerHTML = `${year}年 ${month + 1}月 <div style="display:flex; gap:10px;"><i class="bi bi-chevron-up"></i><i class="bi bi-chevron-down"></i></div>`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+            const prevLastDate = new Date(year, month, 0).getDate();
+            
+            const calendarGrid = document.querySelector('.calendar-grid');
+            // Keep headers
+            const headers = Array.from(calendarGrid.children).slice(0, 7);
+            calendarGrid.innerHTML = '';
+            headers.forEach(h => calendarGrid.appendChild(h));
+            
+            // Previous month days
+            for (let i = firstDay; i > 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'cal-day faded';
+                day.innerText = prevLastDate - i + 1;
+                calendarGrid.appendChild(day);
+            }
+            
+            // Current month days
+            for (let i = 1; i <= lastDate; i++) {
+                const day = document.createElement('div');
+                day.className = 'cal-day';
+                if (i === now.getDate()) day.classList.add('today');
+                day.innerText = i;
+                calendarGrid.appendChild(day);
+            }
+            
+            // Next month days (fill grid)
+            const remainingCells = 42 - (firstDay + lastDate); // 6 rows * 7 cols
+            for (let i = 1; i <= remainingCells; i++) {
+                const day = document.createElement('div');
+                day.className = 'cal-day faded';
+                day.innerText = i;
+                calendarGrid.appendChild(day);
+            }
+        }
+        generateCalendar();
+
+        /* --- Menus & Toggles --- */
+        const startMenu = document.getElementById('start-menu');
+        const startBtn = document.getElementById('start-btn');
+        const powerBtn = document.getElementById('power-btn');
+        const powerMenu = document.getElementById('power-menu');
+        const bootScreen = document.getElementById('boot-screen');
+        const actionCenter = document.getElementById('action-center');
+        const calendarFlyout = document.getElementById('calendar-flyout');
+
+        function closeAllMenus() {
+            startMenu.classList.remove('active');
+            startBtn.classList.remove('active');
+            powerMenu.classList.remove('active');
+            actionCenter.classList.remove('active');
+            calendarFlyout.classList.remove('active');
+        }
+
+        function toggleStartMenu() {
+            const isActive = startMenu.classList.contains('active');
+            closeAllMenus();
+            if (!isActive) {
+                startMenu.classList.add('active');
+                startBtn.classList.add('active');
+            }
+        }
+
+        function toggleActionCenter() {
+            const isActive = actionCenter.classList.contains('active');
+            closeAllMenus();
+            if (!isActive) actionCenter.classList.add('active');
+        }
+
+        function toggleCalendar() {
+            const isActive = calendarFlyout.classList.contains('active');
+            closeAllMenus();
+            if (!isActive) calendarFlyout.classList.add('active');
+        }
+        
+        function toggleQS(btn) {
+            btn.classList.toggle('active');
+        }
+
+        // Power Menu Toggle
+        powerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            powerMenu.classList.toggle('active');
+        });
+
+        function powerAction(action) {
+            closeAllMenus();
+            
+            if (action === 'sleep') {
+                bootScreen.style.display = 'flex';
+                document.getElementById('spinner').style.display = 'none'; 
+                const wake = () => {
+                    bootScreen.style.display = 'none';
+                    document.getElementById('spinner').style.display = 'block'; 
+                    bootScreen.removeEventListener('click', wake);
+                    bootScreen.removeEventListener('touchstart', wake);
+                };
+                setTimeout(() => {
+                    bootScreen.addEventListener('click', wake);
+                    bootScreen.addEventListener('touchstart', wake);
+                }, 500);
+            } 
+            else if (action === 'shutdown') {
+                bootScreen.style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('spinner').style.display = 'none';
+                }, 3000);
+            }
+            else if (action === 'restart') {
+                bootScreen.style.display = 'flex';
+                setTimeout(() => {
+                    location.reload();
+                }, 2500);
+            }
+        }
+
+        // Close menus when clicking outside
+        document.addEventListener('click', function(e) {
+            // Start Menu
+            if (!startMenu.contains(e.target) && !startBtn.contains(e.target) &&
+                !powerBtn.contains(e.target) && !powerMenu.contains(e.target) &&
+                !actionCenter.contains(e.target) && !e.target.closest('.system-tray') &&
+                !calendarFlyout.contains(e.target) && !e.target.closest('.clock-area')) {
+                closeAllMenus();
+            }
+        });
+
+        /* --- Window Management --- */
+        let zIndexCounter = 100;
+
+        function openWindow(id) {
+            const win = document.getElementById(id);
+            if (!win) return;
+
+            win.classList.remove('minimized');
+            win.classList.add('open');
+            bringToFront(win);
+            updateTaskbarIndicator(id, true, true);
+            
+            closeAllMenus();
+        }
+
+        function openUniversalApp(name, iconClass, color) {
+            const win = document.getElementById('universal-app-window');
+            const contentArea = document.getElementById('uni-app-content-area');
+            
+            document.getElementById('uni-app-title').innerHTML = `<i class="bi ${iconClass}" style="color: ${color}"></i> ${name}`;
+            
+            let htmlContent = '';
+            
+            if (name === 'メール') {
+                htmlContent = `
+                    <div style="display:flex; height:100%;">
+                        <div style="width:200px; border-right:1px solid var(--glass-border); overflow-y:auto;">
+                            <div style="padding:10px; font-weight:bold;">受信トレイ</div>
+                            <div style="padding:10px; background:var(--active-bg);">
+                                <div style="font-weight:bold; font-size:13px;">Microsoft Account</div>
+                                <div style="font-size:12px;">セキュリティ通知...</div>
+                            </div>
+                            <div style="padding:10px;">
+                                <div style="font-weight:bold; font-size:13px;">Newsletter</div>
+                                <div style="font-size:12px;">今週のアップデート...</div>
+                            </div>
+                        </div>
+                        <div style="flex:1; padding:20px;">
+                            <h2>Microsoft Account</h2>
+                            <p style="opacity:0.7; font-size:12px;">To: User <span style="margin-left:10px;">10:00 AM</span></p>
+                            <hr style="border:0; border-top:1px solid var(--glass-border); margin:10px 0;">
+                            <p>アカウントへの新しいサインインが検出されました。</p>
+                        </div>
+                    </div>
+                `;
+            } else if (name === 'カレンダー') {
+                htmlContent = `
+                    <div style="padding:20px;">
+                        <h2>2023年 10月</h2>
+                        <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:5px; margin-top:20px; text-align:center;">
+                            <div style="font-weight:bold;">日</div><div style="font-weight:bold;">月</div><div style="font-weight:bold;">火</div><div style="font-weight:bold;">水</div><div style="font-weight:bold;">木</div><div style="font-weight:bold;">金</div><div style="font-weight:bold;">土</div>
+                            <div style="opacity:0.5;">1</div><div style="opacity:0.5;">2</div><div style="opacity:0.5;">3</div><div style="opacity:0.5;">4</div>
+                            <div>1</div><div>2</div><div>3</div>
+                            <div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div>
+                            <div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div>
+                            <div style="background:var(--accent-color); color:white; border-radius:4px;">18</div><div>19</div><div>20</div><div>21</div><div>22</div><div>23</div><div>24</div>
+                            <div>25</div><div>26</div><div>27</div><div>28</div><div>29</div><div>30</div><div>31</div>
+                        </div>
+                    </div>
+                `;
+            } else if (name === 'Store' || name === 'Microsoft Store') {
+                htmlContent = `
+                    <div style="padding:10px;">
+                        <div style="width:100%; height:150px; background:#333; border-radius:8px; color:white; display:flex; align-items:end; padding:15px; margin-bottom:20px; background-image:linear-gradient(45deg, #0078d7, #50e6ff);">
+                            <h1>人気のアプリ</h1>
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:10px;">
+                            ${Array(6).fill(0).map((_,i) => `
+                            <div style="background:var(--hover-bg); padding:10px; border-radius:4px; display:flex; flex-direction:column; align-items:center;">
+                                <div style="width:40px; height:40px; background:gray; border-radius:4px; margin-bottom:5px;"></div>
+                                <span style="font-size:12px;">App ${i+1}</span>
+                                <button style="margin-top:5px; border:none; background:var(--accent-color); color:white; border-radius:10px; padding:2px 10px; font-size:10px;">入手</button>
+                            </div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (name === 'フォト') {
+                htmlContent = `
+                    <div style="padding:10px; display:grid; grid-template-columns:repeat(3, 1fr); gap:5px;">
+                         ${Array(9).fill(0).map((_,i) => `
+                            <div style="aspect-ratio:1; background:#555; border-radius:2px; display:flex; align-items:center; justify-content:center; color:white;">
+                                <i class="bi bi-image" style="font-size:24px;"></i>
+                            </div>
+                         `).join('')}
+                    </div>
+                `;
+            } else if (name === 'カメラ') {
+                 htmlContent = `
+                    <div style="width:100%; height:100%; background:black; display:flex; align-items:center; justify-content:center; color:white; position:relative;">
+                        <i class="bi bi-camera-video-fill" style="font-size:48px;"></i>
+                        <div style="position:absolute; bottom:20px; width:50px; height:50px; border-radius:50%; border:4px solid white; background:transparent;"></div>
+                    </div>
+                `;
+            } else if (name === 'マップ') {
+                 htmlContent = `
+                    <div style="width:100%; height:100%; background:#e6e6e6; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:0; left:0; right:0; bottom:0; background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 20px 20px;"></div>
+                        <i class="bi bi-geo-alt-fill" style="font-size:32px; color:#e81123; z-index:1;"></i>
+                        <div style="position:absolute; bottom:10px; right:10px; background:white; padding:4px; font-size:10px;">© FakeMaps 2023</div>
+                    </div>
+                `;
+            } else if (name === 'クロック') {
+                htmlContent = `
+                    <div style="display:flex; align-items:center; justify-content:center; height:100%; flex-direction:column;">
+                        <div style="font-size:48px;">12:00</div>
+                        <div style="opacity:0.6;">2023年 1月 1日</div>
+                        <div style="margin-top:20px; display:flex; gap:20px;">
+                            <div style="display:flex; flex-direction:column; align-items:center;"><i class="bi bi-alarm"></i><span>アラーム</span></div>
+                            <div style="display:flex; flex-direction:column; align-items:center;"><i class="bi bi-stopwatch"></i><span>タイマー</span></div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                 htmlContent = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                        <i class="bi ${iconClass}" style="font-size: 64px; margin-bottom: 20px; color: ${color};"></i>
+                        <h2>${name}</h2>
+                    </div>
+                `;
+            }
+
+            contentArea.innerHTML = htmlContent;
+            openWindow('universal-app-window');
+        }
+
+        function closeWindow(id) {
+            const win = document.getElementById(id);
+            win.classList.remove('open');
+            if(id === 'calculator-window') clearCalc();
+            updateTaskbarIndicator(id, false, false);
+        }
+
+        function minimizeWindow(id) {
+            const win = document.getElementById(id);
+            win.classList.add('minimized');
+            win.classList.remove('open');
+            updateTaskbarIndicator(id, true, false);
+        }
+
+        function toggleMaximize(id) {
+            const win = document.getElementById(id);
+            if (win.classList.contains('maximized')) {
+                win.classList.remove('maximized');
+            } else {
+                win.classList.add('maximized');
+            }
+        }
+
+        function toggleWindow(id) {
+            const win = document.getElementById(id);
+            if (!win) return;
+
+            if (win.classList.contains('open') && !win.classList.contains('minimized')) {
+                if (win.style.zIndex == zIndexCounter) {
+                    minimizeWindow(id);
+                } else {
+                    bringToFront(win);
+                }
+            } else {
+                openWindow(id);
+            }
+        }
+
+        function bringToFront(element) {
+            zIndexCounter++;
+            element.style.zIndex = zIndexCounter;
+            
+            const appId = element.dataset.appId;
+            if(appId) {
+                document.querySelectorAll('.taskbar-icon').forEach(icon => icon.classList.remove('active'));
+                const tbIcon = document.getElementById('tb-' + appId);
+                if(tbIcon) tbIcon.classList.add('active');
+            }
+        }
+
+        function updateTaskbarIndicator(windowId, isOpen, isActive) {
+            const win = document.getElementById(windowId);
+            if (!win) return;
+            const appId = win.dataset.appId;
+            const tbIcon = document.getElementById('tb-' + appId);
+            
+            if (tbIcon) {
+                if (isOpen) tbIcon.classList.add('open');
+                else tbIcon.classList.remove('open');
+                
+                if (isActive) {
+                    document.querySelectorAll('.taskbar-icon').forEach(i => i.classList.remove('active'));
+                    tbIcon.classList.add('active');
+                } else {
+                    tbIcon.classList.remove('active');
+                }
+            }
+        }
+
+        document.querySelectorAll('.window').forEach(win => {
+            win.addEventListener('mousedown', () => bringToFront(win));
+            win.addEventListener('touchstart', () => bringToFront(win), {passive: true});
+        });
+
+        /* --- Improved Draggable Windows Logic (Mouse + Touch) --- */
+        let isDragging = false;
+        let currentWindow = null;
+        let offset = { x: 0, y: 0 };
+
+        const headers = document.querySelectorAll('.window-header');
+
+        const startDrag = (e) => {
+            if(e.target.closest('.window-controls')) return;
+
+            const header = e.currentTarget;
+            currentWindow = header.parentElement;
+
+            if(currentWindow.classList.contains('maximized')) return;
+
+            currentWindow.classList.add('dragging');
+            isDragging = true;
+
+            const rect = currentWindow.getBoundingClientRect();
+            
+            let clientX, clientY;
+            if (e.type === 'touchstart') {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            offset.x = clientX - rect.left;
+            offset.y = clientY - rect.top;
+            
+            bringToFront(currentWindow);
+        };
+
+        const onDrag = (e) => {
+            if (!isDragging || !currentWindow) return;
+            e.preventDefault(); 
+            
+            let clientX, clientY;
+            if (e.type === 'touchmove') {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            let x = clientX - offset.x;
+            let y = clientY - offset.y;
+            if (y < 0) y = 0;
+            
+            currentWindow.style.left = `${x}px`;
+            currentWindow.style.top = `${y}px`;
+            currentWindow.style.transform = 'scale(1.02)'; 
+        };
+
+        const endDrag = () => {
+            if (currentWindow) {
+                currentWindow.classList.remove('dragging');
+                currentWindow.style.transform = '';
+            }
+            isDragging = false;
+            currentWindow = null;
+        };
+
+        headers.forEach(header => {
+            header.addEventListener('mousedown', startDrag);
+            header.addEventListener('touchstart', startDrag, { passive: false });
+        });
+
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('touchmove', onDrag, { passive: false });
+        
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+        
+        /* --- Desktop Icon Selection & Double Tap --- */
+        function selectIcon(el, event) {
+            if(event) event.stopPropagation(); 
+            document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        
+        document.getElementById('desktop').addEventListener('click', () => {
+            document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+        });
+
+        // Add touch double-tap support
+        document.querySelectorAll('.desktop-icon').forEach(icon => {
+            let lastTap = 0;
+            icon.addEventListener('touchstart', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0) {
+                    e.preventDefault(); 
+                    const winId = icon.getAttribute('data-open');
+                    if(winId) openWindow(winId);
+                }
+                lastTap = currentTime;
+            }, {passive: false});
+        });
+
+        /* --- Calculator Logic --- */
+        let calcExpression = '';
+        const calcDisplay = document.getElementById('calc-display');
+
+        function appendNum(num) {
+            if(calcExpression === '0' && num !== '.') calcExpression = '';
+            calcExpression += num;
+            updateCalcDisplay();
+        }
+
+        function appendOp(op) {
+            const lastChar = calcExpression.slice(-1);
+            if(['+','-','*','/'].includes(lastChar)) {
+                calcExpression = calcExpression.slice(0, -1) + op;
+            } else {
+                calcExpression += op;
+            }
+            updateCalcDisplay();
+        }
+
+        function clearCalc() {
+            calcExpression = '0';
+            updateCalcDisplay();
+        }
+
+        function deleteChar() {
+            calcExpression = calcExpression.toString().slice(0, -1);
+            if(calcExpression === '') calcExpression = '0';
+            updateCalcDisplay();
+        }
+
+        function calcResult() {
+            try {
+                calcExpression = eval(calcExpression).toString();
+            } catch (e) {
+                calcExpression = 'Error';
+            }
+            updateCalcDisplay();
+        }
+
+        function updateCalcDisplay() {
+            calcDisplay.innerText = calcExpression;
+        }
+
+    </script>
+</body>
+</html>
